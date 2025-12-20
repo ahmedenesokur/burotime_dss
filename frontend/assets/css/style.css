@@ -1,7 +1,9 @@
 /* Custom CSS for BüroTime KDS */
 
 :root {
-    --primary-color: #0d6efd;
+    --primary-color: #102A43;
+    --primary-dark: #0a1929;
+    --primary-light: #1e4f73;
     --success-color: #198754;
     --warning-color: #ffc107;
     --danger-color: #dc3545;
@@ -15,6 +17,14 @@ body {
 
 .navbar-brand {
     font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.navbar-brand img {
+    height: 40px;
+    width: auto;
 }
 
 .card {
@@ -132,7 +142,7 @@ canvas {
 .form-control:focus,
 .form-select:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    box-shadow: 0 0 0 0.2rem rgba(16, 42, 67, 0.25);
 }
 
 /* Button Enhancements */
@@ -143,6 +153,12 @@ canvas {
 
 .btn-primary {
     background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+    border-color: var(--primary-dark);
 }
 
 .btn-success {

@@ -3,8 +3,48 @@ const API_BASE_URL = 'http://localhost:3000/api';
 
 let allSalesData = [];
 
+// Check authentication
+function checkAuth() {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        window.location.href = 'login.html';
+        return false;
+    }
+    return true;
+}
+
+// Get auth token
+function getAuthToken() {
+    return localStorage.getItem('authToken');
+}
+
+// Setup user info and logout
+function setupAuthUI() {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const userNameElement = document.getElementById('userName');
+    if (userNameElement && user.name) {
+        userNameElement.textContent = user.name;
+    }
+    
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            logout();
+        });
+    }
+}
+
+function logout() {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    window.location.href = 'login.html';
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', async () => {
+    if (!checkAuth()) return;
+    setupAuthUI();
     await loadProducts();
     await loadSalesData();
     setupEventListeners();

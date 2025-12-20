@@ -91,6 +91,8 @@ async function generateProductForecast(urun_id, options = {}) {
       mevsimsellik_aktif: params.mevsimsellik_aktif
     },
     sonuclar: forecasts,
+    // Toplam tahmini satış
+    'Tahmini Toplam Satış (6 Ay)': forecasts.reduce((sum, f) => sum + (f.tahmini_satis || 0), 0),
     metadata: {
       trend_slope: trendSlope,
       seasonality_enabled: params.mevsimsellik_aktif,

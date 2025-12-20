@@ -16,10 +16,10 @@
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #102A43;">
         <div class="container-fluid">
             <a class="navbar-brand fw-bold" href="index.html">
-                <i class="bi bi-graph-up-arrow"></i> BüroTime KDS
+                <img src="assets/images/logo.svg" alt="BüroTime Logo"> Karar Destek Sistemi
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -36,6 +36,16 @@
                             <i class="bi bi-table"></i> Satış Verileri
                         </a>
                     </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> <span id="userName">Kullanıcı</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-person"></i> Profil</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" id="logoutBtn" href="#"><i class="bi bi-box-arrow-right"></i> Çıkış Yap</a></li>
+                        </ul>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -47,7 +57,7 @@
         <div class="row mb-4">
             <div class="col-12">
                 <h2 class="mb-1">Üretim Planlama Dashboard</h2>
-                <p class="text-muted">6 Aylık Satış Tahmini ve Üretim Önerileri</p>
+                <p class="text-muted">Satış Tahmini ve Üretim Önerileri</p>
             </div>
         </div>
 
@@ -97,8 +107,9 @@
                 <div class="col-md-3">
                     <div class="card border-info">
                         <div class="card-body">
-                            <h6 class="card-subtitle mb-2 text-muted">Aylık Ortalama</h6>
+                            <h6 class="card-subtitle mb-2 text-muted">Ortalama Satış (Son 6 Ay)</h6>
                             <h3 class="card-title mb-0" id="ortalamaSatis">-</h3>
+                            <small class="text-muted" id="genelTrendBadge"></small>
                         </div>
                     </div>
                 </div>
@@ -127,7 +138,7 @@
                                             <th>Ürün Kodu</th>
                                             <th>Ürün Adı</th>
                                             <th class="text-end">Toplam Satış</th>
-                                            <th class="text-end">Aylık Ortalama</th>
+                                            <th class="text-end">Ortalama Satış (Son 6 Ay)</th>
                                         </tr>
                                     </thead>
                                     <tbody id="topProductsTable">
@@ -148,7 +159,7 @@
                 <div class="col-md-3">
                     <div class="card border-primary">
                         <div class="card-body">
-                            <h6 class="card-subtitle mb-2 text-muted">Aylık Ortalama Satış</h6>
+                            <h6 class="card-subtitle mb-2 text-muted">Ortalama Satış (Son 6 ay)</h6>
                             <h3 class="card-title mb-0" id="aylikOrtalama">-</h3>
                             <small class="text-muted" id="trendBadge"></small>
                         </div>
@@ -157,7 +168,7 @@
                 <div class="col-md-3">
                     <div class="card border-success">
                         <div class="card-body">
-                            <h6 class="card-subtitle mb-2 text-muted">Kampanya Ortalama</h6>
+                            <h6 class="card-subtitle mb-2 text-muted">Kampanyalı Satış Ortalaması</h6>
                             <h3 class="card-title mb-0" id="kampanyaOrtalama">-</h3>
                         </div>
                     </div>
@@ -165,7 +176,7 @@
                 <div class="col-md-3">
                     <div class="card border-info">
                         <div class="card-body">
-                            <h6 class="card-subtitle mb-2 text-muted">Normal Ortalama</h6>
+                            <h6 class="card-subtitle mb-2 text-muted">Kampanyasız Satış Ortalaması</h6>
                             <h3 class="card-title mb-0" id="normalOrtalama">-</h3>
                         </div>
                     </div>
@@ -219,8 +230,11 @@
             <div class="row mb-4">
                 <div class="col-md-8">
                     <div class="card">
-                        <div class="card-header bg-primary text-white">
+                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">Geçmiş Satışlar ve Tahmin</h5>
+                            <button class="btn btn-sm btn-light" id="detailedAnalysisBtn" style="display: none;">
+                                <i class="bi bi-graph-up"></i> Detaylı Analiz
+                            </button>
                         </div>
                         <div class="card-body">
                             <canvas id="salesForecastChart"></canvas>
@@ -244,7 +258,7 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">6 Aylık Tahmin Sonuçları</h5>
+                            <h5 class="mb-0" id="forecastResultsTitle">6 Aylık Tahmin Sonuçları</h5>
                             <button class="btn btn-sm btn-light" id="kaydetBtn" disabled>
                                 <i class="bi bi-save"></i> Kaydet
                             </button>
@@ -267,6 +281,8 @@
                                             </td>
                                         </tr>
                                     </tbody>
+                                    <tfoot id="forecastFooter" class="table-dark">
+                                    </tfoot>
                                 </table>
                             </div>
                         </div>
@@ -299,6 +315,77 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
+    <!-- Bulk forecast results modal -->
+    <div class="modal fade" id="bulkForecastModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Tüm Ürünler İçin Tahmin Sonuçları (Güvenlik Stoku Hariç❗)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <strong id="bulkForecastSummary">Yükleniyor...</strong>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Ürün Kodu</th>
+                                    <th>Ürün Adı</th>
+                                    <th class="text-end">Tahmini Toplam Satış (6 Ay)</th>
+                                    <th class="text-center">Durum</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bulkForecastTable">
+                                <tr><td colspan="4" class="text-center text-muted">Henüz sonuç yok</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analysis Modal - Graph and Insights Side by Side -->
+    <div class="modal fade" id="analysisModal" tabindex="-1" aria-labelledby="analysisModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="analysisModalLabel">
+                        <i class="bi bi-graph-up"></i> Detaylı Analiz
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Chart Column -->
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mb-3">Geçmiş Satışlar ve Tahmin</h6>
+                            <canvas id="modalAnalysisChart" style="max-height: 400px;"></canvas>
+                        </div>
+                        <!-- Insights Column -->
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mb-3"><i class="bi bi-lightbulb"></i> Karar Destek Önerileri</h6>
+                            <div id="modalAnalysisInsights" style="max-height: 500px; overflow-y: auto;">
+                                <div class="text-center text-muted py-3">
+                                    <i class="bi bi-info-circle fs-3"></i>
+                                    <p class="mt-2">Yükleniyor...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="assets/js/dashboard.js"></script>
 </body>
 </html>

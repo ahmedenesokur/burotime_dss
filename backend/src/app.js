@@ -1,8 +1,10 @@
 // Express application setup
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 
 // Import routes
+const authRoutes = require('./routes/authRoutes');
 const urunlerRoutes = require('./routes/urunlerRoutes');
 const satisRoutes = require('./routes/satisRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
@@ -16,6 +18,9 @@ app.use(cors()); // Enable CORS for frontend
 app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
+// Serve static files from frontend
+app.use(express.static(path.join(__dirname, '../../frontend')));
+
 // Logging middleware
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
@@ -23,6 +28,7 @@ app.use((req, res, next) => {
 });
 
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/urunler', urunlerRoutes);
 app.use('/api/satis', satisRoutes);
 app.use('/api/dashboard', dashboardRoutes);

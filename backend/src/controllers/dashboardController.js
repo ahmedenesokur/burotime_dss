@@ -109,14 +109,41 @@ async function getSingleProductSummary(urun_id) {
 
 // Helper: Get summary for all products
 async function getAllProductsSummary() {
-  // Total sales stats
+  // Helper: Format date to YYYY-MM
+  function formatMonth(date) {
+    const y = date.getFullYear();
+    const m = (date.getMonth() + 1).toString().padStart(2, '0');
+    return `${y}-${m}`;
+  }
+
+  const now = new Date();
+  const last6 = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    last6.push(formatMonth(d));
+  }
+
+  const prevYear6 = last6.map(m => {
+    const [y, mm] = m.split('-').map(Number);
+    return `${y - 1}-${String(mm).padStart(2, '0')}`;
+  });
+
+  // Total sales stats (all time)
   const [totalStats] = await db.query(
     `SELECT 
       COUNT(DISTINCT urun_id) as toplam_urun,
       COUNT(*) as toplam_kayit,
-      SUM(satis_adedi) as toplam_satis,
-      ROUND(AVG(satis_adedi), 2) as ortalama_satis
+      SUM(satis_adedi) as toplam_satis
     FROM satis_verileri`
+  );
+
+  // Last 6 months average for all products
+  const [last6AvgStats] = await db.query(
+    `SELECT 
+      ROUND(AVG(satis_adedi), 2) as ortalama_satis
+    FROM satis_verileri 
+    WHERE ay IN (${last6.map(()=>'?').join(',')})`,
+    [...last6]
   );
   
   // Best seller
@@ -158,24 +185,6 @@ async function getAllProductsSummary() {
   );
 
   // Calculate aggregated trend for ALL products: last 6 months vs same period previous year
-  function formatMonth(date) {
-    const y = date.getFullYear();
-    const m = (date.getMonth() + 1).toString().padStart(2, '0');
-    return `${y}-${m}`;
-  }
-
-  const now = new Date();
-  const last6 = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    last6.push(formatMonth(d));
-  }
-
-  const prevYear6 = last6.map(m => {
-    const [y, mm] = m.split('-').map(Number);
-    return `${y - 1}-${String(mm).padStart(2, '0')}`;
-  });
-
   const [currAgg] = await db.query(
     `SELECT AVG(satis_adedi) as ortalama FROM satis_verileri WHERE ay IN (${last6.map(()=>'?').join(',')})`,
     [...last6]
@@ -196,9 +205,9 @@ async function getAllProductsSummary() {
   return {
     genel: {
       ...totalStats[0],
+      ortalama_satis: last6AvgStats[0].ortalama_satis || 0,
       kampanya_ortalama: Math.round(kampanyaImpact[0].kampanya_ortalama || 0),
-      normal_ortalama: Math.round(kampanyaImpact[0].normal_ortalama || 0)
-      ,
+      normal_ortalama: Math.round(kampanyaImpact[0].normal_ortalama || 0),
       trend: trendAgg,
       trend_yuzde: Math.round(trendYuzdeAgg * 10) / 10
     },

@@ -8,8 +8,48 @@ let currentForecast = null;
 let currentSalesData = null;
 let currentSummary = null;
 
+// Check authentication
+function checkAuth() {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        window.location.href = 'login.html';
+        return false;
+    }
+    return true;
+}
+
+// Get auth token
+function getAuthToken() {
+    return localStorage.getItem('authToken');
+}
+
+// Setup user info and logout
+function setupAuthUI() {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const userNameElement = document.getElementById('userName');
+    if (userNameElement && user.name) {
+        userNameElement.textContent = user.name;
+    }
+    
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            logout();
+        });
+    }
+}
+
+function logout() {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    window.location.href = 'login.html';
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', async () => {
+    if (!checkAuth()) return;
+    setupAuthUI();
     await loadProducts();
     await loadAllProductsSummary();
     setupEventListeners();
@@ -21,6 +61,29 @@ function setupEventListeners() {
     document.getElementById('tahminUretBtn').addEventListener('click', generateForecast);
     document.getElementById('topluTahminBtn').addEventListener('click', generateBulkForecast);
     document.getElementById('kaydetBtn').addEventListener('click', saveForecast);
+    document.getElementById('aySayisi').addEventListener('change', updateForecastResultsTitle);
+    document.getElementById('aySayisi').addEventListener('input', updateForecastResultsTitle);
+    
+    // Detailed Analysis button listener
+    const analysisBtn = document.getElementById('detailedAnalysisBtn');
+    if (analysisBtn) {
+        analysisBtn.addEventListener('click', openAnalysisModal);
+    }
+    
+    // Modal listener - update chart when modal is shown
+    const analysisModal = document.getElementById('analysisModal');
+    if (analysisModal) {
+        analysisModal.addEventListener('show.bs.modal', createModalAnalysisChart);
+    }
+}
+
+// Update forecast results title based on month input
+function updateForecastResultsTitle() {
+    const aySayisi = document.getElementById('aySayisi').value;
+    const titleElement = document.getElementById('forecastResultsTitle');
+    if (titleElement) {
+        titleElement.textContent = `${aySayisi} Aylık Tahmin Sonuçları`;
+    }
 }
 
 // Load all products into dropdown
@@ -85,6 +148,25 @@ async function loadAllProductsSummary() {
         document.getElementById('toplamSatis').textContent = data.genel.toplam_satis.toLocaleString('tr-TR');
         document.getElementById('ortalamaSatis').textContent = Math.round(data.genel.ortalama_satis).toLocaleString('tr-TR');
         document.getElementById('enCokSatan').textContent = data.en_cok_satan.urun_adi;
+
+        // Show aggregated trend for all products (last 6 months vs same period previous year)
+        const genelBadge = document.getElementById('genelTrendBadge');
+        if (genelBadge && data.genel) {
+            let trendClass = 'trend-stable';
+            let trendText = 'Stabil';
+            let trendIcon = '→';
+            if (data.genel.trend === 'growing') {
+                trendClass = 'trend-growing';
+                trendText = `Büyüyor (+${data.genel.trend_yuzde}%)`;
+                trendIcon = '↑';
+            } else if (data.genel.trend === 'declining') {
+                trendClass = 'trend-declining';
+                trendText = `Düşüyor (${data.genel.trend_yuzde}%)`;
+                trendIcon = '↓';
+            }
+            genelBadge.className = trendClass;
+            genelBadge.textContent = `${trendIcon} ${trendText}`;
+        }
         
         // Update top products table
         const tbody = document.getElementById('topProductsTable');
@@ -306,6 +388,12 @@ async function generateForecast() {
         // Generate and display decision insights
         displayDecisionInsights(data);
         
+        // Show detailed analysis button
+        const analysisBtn = document.getElementById('detailedAnalysisBtn');
+        if (analysisBtn) {
+            analysisBtn.style.display = 'inline-block';
+        }
+        
         // Enable save button
         document.getElementById('kaydetBtn').disabled = false;
         
@@ -326,6 +414,9 @@ function displayForecastResults(data) {
     const tbody = document.getElementById('forecastTable');
     tbody.innerHTML = '';
     
+    let toplamTahminSatis = 0;
+    let toplamOnilenUretim = 0;
+    
     data.sonuclar.forEach(item => {
         const guvenlikStok = item.onerilen_uretim - item.tahmini_satis;
         const row = `
@@ -337,7 +428,24 @@ function displayForecastResults(data) {
             </tr>
         `;
         tbody.innerHTML += row;
+        
+        // Toplamları hesapla
+        toplamTahminSatis += item.tahmini_satis;
+        toplamOnilenUretim += item.onerilen_uretim;
     });
+    
+    // Toplam satırını footer'a ekle
+    const tfoot = document.getElementById('forecastFooter');
+    const toplamGuvenlikStok = toplamOnilenUretim - toplamTahminSatis;
+    const footerRow = `
+        <tr class="fw-bold">
+            <td><strong>TOPLAM</strong></td>
+            <td class="text-end"><strong>${toplamTahminSatis.toLocaleString('tr-TR')}</strong></td>
+            <td class="text-end"><strong>${toplamOnilenUretim.toLocaleString('tr-TR')}</strong></td>
+            <td class="text-end"><strong>${toplamGuvenlikStok.toLocaleString('tr-TR')}</strong></td>
+        </tr>
+    `;
+    tfoot.innerHTML = footerRow;
 }
 
 // Update chart with forecast data
@@ -394,8 +502,58 @@ async function generateBulkForecast() {
         
         const response = await fetch(`${API_BASE_URL}/tahmin/toplu?ay_sayisi=6`);
         const data = await response.json();
-        
-        showSuccess(`Tahmin tamamlandı! ${data.basarili}/${data.toplam_urun} ürün için tahmin oluşturuldu.`);
+
+        // Populate modal table with results
+        const tbody = document.getElementById('bulkForecastTable');
+        const summary = document.getElementById('bulkForecastSummary');
+        tbody.innerHTML = '';
+
+        // Sıralama: Tahmini Toplam Satış'a göre büyükten küçüğe
+        data.urunler.sort((a, b) => {
+            const toplamA = a['Tahmini Toplam Satış (6 Ay)'] !== undefined
+                ? a['Tahmini Toplam Satış (6 Ay)']
+                : (a.sonuclar ? a.sonuclar.reduce((s, it) => s + (it.tahmini_satis || 0), 0) : 0);
+            
+            const toplamB = b['Tahmini Toplam Satış (6 Ay)'] !== undefined
+                ? b['Tahmini Toplam Satış (6 Ay)']
+                : (b.sonuclar ? b.sonuclar.reduce((s, it) => s + (it.tahmini_satis || 0), 0) : 0);
+            
+            return toplamB - toplamA; // Büyükten küçüğe
+        });
+
+        data.urunler.forEach(u => {
+            // Try to read the Turkish labeled field added by backend, fallback to computed sum
+            const tahminiToplam = u['Tahmini Toplam Satış (6 Ay)'] !== undefined
+                ? u['Tahmini Toplam Satış (6 Ay)']
+                : (u.sonuclar ? u.sonuclar.reduce((s, it) => s + (it.tahmini_satis || 0), 0) : null);
+
+            const displayToplam = tahminiToplam !== null && tahminiToplam !== undefined
+                ? tahminiToplam.toLocaleString('tr-TR')
+                : '-';
+
+            const statusHtml = u.error ? `<span class="text-danger">Hata: ${u.error}</span>` : '<span class="text-success">Başarılı</span>';
+
+            const row = `
+                <tr>
+                    <td><strong>${u.urun_kodu || ''}</strong></td>
+                    <td>${u.urun_adi || ''}</td>
+                    <td class="text-end">${displayToplam}</td>
+                    <td class="text-center">${statusHtml}</td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+
+        if (summary) {
+            summary.textContent = `Başarılı: ${data.basarili} / Toplam Ürün: ${data.toplam_urun}`;
+        }
+
+        // Show modal
+        const modalEl = document.getElementById('bulkForecastModal');
+        if (modalEl) {
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        }
         
     } catch (error) {
         console.error('Error generating bulk forecast:', error);
@@ -632,6 +790,109 @@ function displayDecisionInsights(forecastData) {
     if (noInsights) {
         noInsights.style.display = 'none';
     }
+    
+    // Also populate modal insights
+    const modalInsights = document.getElementById('modalAnalysisInsights');
+    if (modalInsights) {
+        modalInsights.innerHTML = html;
+    }
+}
+
+// Open analysis modal
+function openAnalysisModal() {
+    if (!currentForecast) {
+        alert('Lütfen önce tahmin oluşturunuz');
+        return;
+    }
+    
+    const modal = new bootstrap.Modal(document.getElementById('analysisModal'));
+    modal.show();
+}
+
+// Create analysis chart in modal
+function createModalAnalysisChart() {
+    if (!currentSalesData || !currentForecast) {
+        return;
+    }
+    
+    const canvas = document.getElementById('modalAnalysisChart');
+    if (!canvas) return;
+    
+    // Destroy existing chart if any
+    if (window.modalChartInstance) {
+        window.modalChartInstance.destroy();
+    }
+    
+    // Prepare historical data
+    const dates = currentSalesData.map(d => d.ay);
+    
+    // Prepare forecast data
+    const forecastDates = currentForecast.sonuclar.map(d => d.ay);
+    
+    const historicalSales = currentSalesData.map(d => d.satis_adedi);
+    const forecastSales = currentForecast.sonuclar.map(f => f.tahmini_satis);
+    
+    // Create empty arrays for proper line separation
+    const historicalForecast = new Array(historicalSales.length).fill(null);
+    const futureHistorical = new Array(forecastSales.length).fill(null);
+    const combinedDates = [...dates, ...forecastDates];
+    
+    const ctx = canvas.getContext('2d');
+    window.modalChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: combinedDates,
+            datasets: [
+                {
+                    label: 'Geçmiş Satışlar',
+                    data: [...historicalSales, ...futureHistorical],
+                    borderColor: '#102A43',
+                    backgroundColor: 'rgba(16, 42, 67, 0.1)',
+                    fill: false,
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#102A43',
+                    tension: 0.1
+                },
+                {
+                    label: 'Tahmin',
+                    data: [...historicalForecast, ...forecastSales],
+                    borderColor: '#ffc107',
+                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                    fill: false,
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    pointRadius: 4,
+                    pointBackgroundColor: '#ffc107',
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { 
+                        usePointStyle: true,
+                        padding: 15,
+                        font: { size: 11 }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString('tr-TR');
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
 
 // Show success message
