@@ -340,3 +340,5 @@ Bu proje üniversite projesi olarak geliştirilmiştir.
 ---
 
 **Not:** Bu sistem eğitim amaçlı geliştirilmiştir. Gerçek üretim ortamında kullanmadan önce güvenlik ve performans testleri yapılmalıdır.
+#   k d s _ p r o j e c t  
+ 
