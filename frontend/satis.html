@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Satış Verileri - BüroTime KDS</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="assets/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="index.html">
+                <i class="bi bi-graph-up-arrow"></i> BüroTime KDS
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="satis.html">
+                            <i class="bi bi-table"></i> Satış Verileri
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid mt-4">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h2 class="mb-1">Satış Verileri Yönetimi</h2>
+                <p class="text-muted">Geçmiş satış verilerini görüntüleyin ve yeni kayıt ekleyin</p>
+            </div>
+        </div>
+
+        <!-- Add Sales Form -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-plus-circle"></i> Yeni Satış Kaydı Ekle
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="salesForm">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Ürün <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="urunSelect" required>
+                                        <option value="">Yükleniyor...</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Ay <span class="text-danger">*</span></label>
+                                    <input type="month" class="form-control" id="ayInput" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Satış Adedi <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="satisAdedi" min="0" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Kampanya</label>
+                                    <select class="form-select" id="kampanyaSelect">
+                                        <option value="0">Hayır</option>
+                                        <option value="1">Evet</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-success w-100">
+                                        <i class="bi bi-check-circle"></i> Ekle
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                        <div id="formMessage" class="mt-3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter -->
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label class="form-label">Ürüne Göre Filtrele</label>
+                <select class="form-select" id="filterUrun">
+                    <option value="">Tüm Ürünler</option>
+                </select>
+            </div>
+            <div class="col-md-8 d-flex align-items-end justify-content-end">
+                <span class="text-muted" id="recordCount">Toplam: - kayıt</span>
+            </div>
+        </div>
+
+        <!-- Sales Data Table -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-table"></i> Satış Kayıtları
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Ürün Kodu</th>
+                                        <th>Ürün Adı</th>
+                                        <th>Ay</th>
+                                        <th class="text-end">Satış Adedi</th>
+                                        <th class="text-center">Kampanya</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="salesTable">
+                                    <tr>
+                                        <td colspan="5" class="text-center">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Yükleniyor...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="assets/js/satis.js"></script>
+</body>
+</html>
