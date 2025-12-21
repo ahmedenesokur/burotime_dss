@@ -75,6 +75,18 @@ function setupEventListeners() {
     if (analysisModal) {
         analysisModal.addEventListener('show.bs.modal', createModalAnalysisChart);
     }
+    
+    // Campaign Performance button listener
+    const campaignPerfBtn = document.getElementById('campaignPerformanceBtn');
+    if (campaignPerfBtn) {
+        campaignPerfBtn.addEventListener('click', openCampaignPerformanceModal);
+    }
+    
+    // Modal listener - update chart when campaign performance modal is shown
+    const campaignPerfModal = document.getElementById('campaignPerformanceModal');
+    if (campaignPerfModal) {
+        campaignPerfModal.addEventListener('show.bs.modal', createCampaignPerformanceChart);
+    }
 }
 
 // Update forecast results title based on month input
@@ -359,6 +371,14 @@ function createCampaignChart(salesData) {
             }
         }
     });
+    
+    // Show campaign performance button if there are campaign records
+    if (kampanyaData.length > 0) {
+        const campaignPerfBtn = document.getElementById('campaignPerformanceBtn');
+        if (campaignPerfBtn) {
+            campaignPerfBtn.style.display = 'inline-block';
+        }
+    }
 }
 
 // Generate forecast for current product
@@ -446,6 +466,9 @@ function displayForecastResults(data) {
         </tr>
     `;
     tfoot.innerHTML = footerRow;
+    
+    // Display campaign recommendations for forecast months
+    displayCampaignRecommendations(data);
 }
 
 // Update chart with forecast data
@@ -904,4 +927,379 @@ function showSuccess(message) {
 // Show error message
 function showError(message) {
     alert('❌ ' + message);
+}
+
+// Open campaign performance modal
+function openCampaignPerformanceModal() {
+    if (!currentSalesData) {
+        showError('Lütfen bir ürün seçin ve satış verilerini yükleyin');
+        return;
+    }
+    
+    const modal = new bootstrap.Modal(document.getElementById('campaignPerformanceModal'));
+    modal.show();
+}
+
+// Calculate campaign performance: for each campaign month, calculate % increase vs monthly average (excluding that month)
+function calculateCampaignPerformance() {
+    if (!currentSalesData) {
+        return null;
+    }
+    
+    // Filter campaign months
+    const campaignMonths = currentSalesData.filter(d => d.kampanya_var_mi === 1);
+    
+    if (campaignMonths.length === 0) {
+        return null;
+    }
+    
+    // Calculate overall average of non-campaign months
+    const nonCampaignMonths = currentSalesData.filter(d => d.kampanya_var_mi === 0);
+    const nonCampaignAvg = nonCampaignMonths.length > 0
+        ? nonCampaignMonths.reduce((sum, d) => sum + d.satis_adedi, 0) / nonCampaignMonths.length
+        : 0;
+    
+    // Calculate overall average (including all months)
+    const allAvg = currentSalesData.reduce((sum, d) => sum + d.satis_adedi, 0) / currentSalesData.length;
+    
+    // For each campaign month, calculate percentage increase
+    const performance = campaignMonths.map(month => {
+        const baselineAvg = nonCampaignAvg > 0 ? nonCampaignAvg : allAvg;
+        const percentageIncrease = ((month.satis_adedi - baselineAvg) / baselineAvg) * 100;
+        
+        return {
+            ay: month.ay,
+            satis_adedi: month.satis_adedi,
+            baselineAvg: baselineAvg,
+            percentageIncrease: percentageIncrease
+        };
+    });
+    
+    // Sort by percentage increase (descending)
+    performance.sort((a, b) => b.percentageIncrease - a.percentageIncrease);
+    
+    return {
+        data: performance,
+        nonCampaignAvg: nonCampaignAvg,
+        allAvg: allAvg
+    };
+}
+
+// Create campaign performance chart in modal
+function createCampaignPerformanceChart() {
+    const campaignPerfData = calculateCampaignPerformance();
+    
+    if (!campaignPerfData || campaignPerfData.data.length === 0) {
+        const canvas = document.getElementById('campaignPerformanceChart');
+        const summary = document.getElementById('campaignPerformanceSummary');
+        
+        if (summary) {
+            summary.textContent = 'Kampanya verisi bulunamadı.';
+        }
+        return;
+    }
+    
+    const canvas = document.getElementById('campaignPerformanceChart');
+    if (!canvas) return;
+    
+    // Destroy existing chart if any
+    if (window.campaignPerfChartInstance) {
+        window.campaignPerfChartInstance.destroy();
+    }
+    
+    const performanceData = campaignPerfData.data;
+    const labels = performanceData.map(p => p.ay);
+    const percentageIncreases = performanceData.map(p => p.percentageIncrease);
+    const salesValues = performanceData.map(p => p.satis_adedi);
+    
+    // Determine colors: green for positive, red for negative
+    const colors = percentageIncreases.map(val => val >= 0 ? '#198754' : '#dc3545');
+    
+    const ctx = canvas.getContext('2d');
+    window.campaignPerfChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Satış Artışı (%)',
+                data: percentageIncreases,
+                backgroundColor: colors,
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            indexAxis: 'y',
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toFixed(1) + '%';
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Ortalama Satışa Göre Artış (%)'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Update summary
+    const summary = document.getElementById('campaignPerformanceSummary');
+    if (summary) {
+        const topPerformer = performanceData[0];
+        const topIncrease = topPerformer.percentageIncrease.toFixed(1);
+        const topSales = topPerformer.satis_adedi;
+        const baseline = topPerformer.baselineAvg.toFixed(0);
+        
+        summary.innerHTML = `
+            <strong>En Yüksek Performans:</strong> <span class="badge bg-success">${topPerformer.ay}</span> 
+            ayında +${topIncrease}% artış (${baseline} ortalamaya karşı ${topSales} satış)
+        `;
+    }
+}
+
+// Display campaign recommendations based on forecast months and high-performance campaign months
+function displayCampaignRecommendations(forecastData) {
+    const contentDiv = document.getElementById('recommendationsContent');
+    const noRecommendationsDiv = document.getElementById('noRecommendations');
+    
+    console.log('=== CAMPAIGN RECOMMENDATIONS START ===');
+    
+    // Clear previous content
+    if (contentDiv) contentDiv.innerHTML = '';
+    
+    if (!currentSalesData || currentSalesData.length === 0) {
+        console.log('❌ No sales data');
+        if (noRecommendationsDiv) noRecommendationsDiv.style.display = 'block';
+        return;
+    }
+    
+    // Get campaign months
+    const campaignMonths = currentSalesData.filter(d => d.kampanya_var_mi === 1);
+    console.log('Campaign months found:', campaignMonths.length);
+    
+    if (campaignMonths.length === 0) {
+        console.log('❌ No campaign months in history');
+        if (noRecommendationsDiv) noRecommendationsDiv.style.display = 'block';
+        if (contentDiv) contentDiv.innerHTML = '<p class="text-muted">Kampanya verisi bulunamadı</p>';
+        return;
+    }
+    
+    // Calculate baseline: average of non-campaign months
+    const nonCampaignMonths = currentSalesData.filter(d => d.kampanya_var_mi === 0);
+    const baselineAvg = nonCampaignMonths.length > 0
+        ? nonCampaignMonths.reduce((sum, d) => sum + d.satis_adedi, 0) / nonCampaignMonths.length
+        : currentSalesData.reduce((sum, d) => sum + d.satis_adedi, 0) / currentSalesData.length;
+    
+    console.log('Baseline average:', baselineAvg.toFixed(2));
+    
+    // Find high-performance campaign months (15%+ improvement)
+    const highPerformanceMonths = campaignMonths.filter(month => {
+        const improvement = ((month.satis_adedi - baselineAvg) / baselineAvg) * 100;
+        return improvement >= 15;
+    });
+    
+    console.log('High-performance months (15%+):', highPerformanceMonths.length);
+    
+    if (highPerformanceMonths.length === 0) {
+        console.log('❌ No high-performance campaign months');
+        if (noRecommendationsDiv) noRecommendationsDiv.style.display = 'block';
+        if (contentDiv) contentDiv.innerHTML = '<p class="text-muted">%15+ performans gösteren kampanya ayı yok</p>';
+        return;
+    }
+    
+    // Extract month numbers (01-12) from high-performance months
+    const highPerfMonthNumbers = new Set(
+        highPerformanceMonths.map(m => m.ay.split('-')[1]) // Extract MM from YYYY-MM
+    );
+    
+    console.log('High-performance month numbers:', Array.from(highPerfMonthNumbers).sort());
+    
+    // Get forecast months
+    const forecastMonths = forecastData.sonuclar || [];
+    console.log('Forecast months:', forecastMonths.length);
+    
+    // Find recommendations: forecast months that match high-performance month numbers
+    let recommendations = [];
+    
+    forecastMonths.forEach(fMonth => {
+        const forecastMonthNumber = fMonth.ay.split('-')[1]; // Extract MM from YYYY-MM
+        
+        if (highPerfMonthNumbers.has(forecastMonthNumber)) {
+            // Find the corresponding high-performance month for improvement percentage
+            const perfMonth = highPerformanceMonths.find(m => m.ay.split('-')[1] === forecastMonthNumber);
+            const improvement = ((perfMonth.satis_adedi - baselineAvg) / baselineAvg) * 100;
+            
+            recommendations.push({
+                ay: fMonth.ay,
+                monthNumber: forecastMonthNumber,
+                forecastSales: fMonth.tahmini_satis,
+                recommendedProduction: fMonth.onerilen_uretim,
+                historicalImprovement: improvement,
+                historicalSales: perfMonth.satis_adedi
+            });
+            
+            console.log(`✅ Match: Forecast ${fMonth.ay} matches high-perf month ${forecastMonthNumber}`);
+        }
+    });
+    
+    console.log('Total recommendations:', recommendations.length);
+    
+    if (recommendations.length === 0) {
+        console.log('❌ No matching months between high-performance and forecast');
+        if (noRecommendationsDiv) noRecommendationsDiv.style.display = 'block';
+        if (contentDiv) contentDiv.innerHTML = '<p class="text-muted">Tahmin edilen aylar arasında kampanya için uygun ay yok</p>';
+        return;
+    }
+    
+    // Sort by improvement percentage (descending)
+    recommendations.sort((a, b) => b.historicalImprovement - a.historicalImprovement);
+    
+    // Display recommendations
+    console.log('✅ Displaying', recommendations.length, 'recommendations');
+    if (noRecommendationsDiv) noRecommendationsDiv.style.display = 'none';
+    
+    let html = `
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Ay</th>
+                        <th class="text-end">Geçmiş Artış (%)</th>
+                        <th class="text-end">Tahmin Satış</th>
+                        <th class="text-end">Önerilen Üretim</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    recommendations.forEach(rec => {
+        html += `
+            <tr>
+                <td><strong>${rec.ay}</strong></td>
+                <td class="text-end">
+                    <span class="badge bg-success">+${rec.historicalImprovement.toFixed(1)}%</span>
+                </td>
+                <td class="text-end">${rec.forecastSales.toLocaleString('tr-TR')}</td>
+                <td class="text-end"><strong>${rec.recommendedProduction.toLocaleString('tr-TR')}</strong></td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+        <small class="text-muted mt-2 d-block">
+            <i class="bi bi-lightbulb"></i> Geçmiş verilerinde aynı aylarda kampanya %15+ satış artışı sağlamıştır
+        </small>
+    `;
+    
+    if (contentDiv) contentDiv.innerHTML = html;
+    console.log('=== CAMPAIGN RECOMMENDATIONS END ===');
+}
+
+// Helper function to process and display campaign recommendations
+function processCampaignRecommendations(highPerformanceMonths, baselineAvg, forecastData, isNoHistoryCampaign) {
+    const contentDiv = document.getElementById('recommendationsContent');
+    
+    // Get forecast months
+    const forecastMonths = forecastData.sonuclar.map(f => f.ay);
+    
+    console.log('📅 Forecast Months:', forecastMonths);
+    console.log('🔍 Comparing with High Performance Months:', highPerformanceMonths.map(m => m.ay));
+    
+    // Find overlapping months
+    const recommendedMonths = [];
+    
+    highPerformanceMonths.forEach(perfMonth => {
+        const forecastItem = forecastData.sonuclar.find(f => f.ay === perfMonth.ay);
+        
+        if (forecastItem) {
+            const percentageIncrease = ((perfMonth.satis_adedi - baselineAvg) / baselineAvg) * 100;
+            
+            console.log(`✅ Match found: ${perfMonth.ay} with ${percentageIncrease.toFixed(1)}% increase`);
+            
+            recommendedMonths.push({
+                ay: perfMonth.ay,
+                performanceSales: perfMonth.satis_adedi,
+                percentageIncrease: percentageIncrease,
+                forecastedSales: forecastItem.tahmini_satis,
+                recommendedProduction: forecastItem.onerilen_uretim
+            });
+        } else {
+            console.log(`❌ No match for: ${perfMonth.ay}`);
+        }
+    });
+    
+    console.log('🎁 Recommended Months Found:', recommendedMonths.length);
+    
+    // Sort by percentage increase (descending)
+    recommendedMonths.sort((a, b) => b.percentageIncrease - a.percentageIncrease);
+    
+    // Display recommendations
+    const recommendationsDiv = document.getElementById('campaignRecommendations');
+    const noRecommendationsDiv = document.getElementById('noRecommendations');
+    
+    if (recommendedMonths.length > 0) {
+        console.log('✅ Showing recommendations!');
+        let html = `
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Ay</th>
+                            <th class="text-end">Artış (%)</th>
+                            <th class="text-end">Tahmin Satış</th>
+                            <th class="text-end">Önerilen Üretim</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        recommendedMonths.forEach(rec => {
+            html += `
+                <tr>
+                    <td><strong>${rec.ay}</strong></td>
+                    <td class="text-end">
+                        <span class="badge bg-success">+${rec.percentageIncrease.toFixed(1)}%</span>
+                    </td>
+                    <td class="text-end">${rec.forecastedSales.toLocaleString('tr-TR')}</td>
+                    <td class="text-end"><strong>${rec.recommendedProduction.toLocaleString('tr-TR')}</strong></td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+            <small class="text-muted mt-2 d-block">
+                <i class="bi bi-info-circle"></i> Geçmiş satışlarda ${isNoHistoryCampaign ? '%10+ artış gösteren' : 'kampanya ile en az %15 satış artışı gösteren'} aylar
+            </small>
+        `;
+        
+        if (contentDiv) contentDiv.innerHTML = html;
+        if (recommendationsDiv) recommendationsDiv.style.display = 'block';
+        if (noRecommendationsDiv) noRecommendationsDiv.style.display = 'none';
+    } else {
+        // No recommendations for forecast months
+        console.warn('⚠️ No overlapping months between high-performance and forecast months');
+        console.warn('  High-Performance Months:', highPerformanceMonths.map(m => m.ay));
+        console.warn('  Forecast Months:', forecastMonths);
+        
+        if (contentDiv) contentDiv.innerHTML = '<p style="color: red;">TEST: Eşleşen ay yok. Geçmiş aylar: ' + highPerformanceMonths.map(m => m.ay).join(', ') + ' | Tahmin ayları: ' + forecastMonths.join(', ') + '</p>';
+        if (recommendationsDiv) recommendationsDiv.style.display = 'none';
+        if (noRecommendationsDiv) noRecommendationsDiv.style.display = 'block';
+    }
 }

@@ -243,11 +243,32 @@
                 </div>
                 <div class="col-md-4">
                     <div class="card">
-                        <div class="card-header bg-success text-white">
+                        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">Kampanya Etkisi</h5>
+                            <button class="btn btn-sm btn-light" id="campaignPerformanceBtn" style="display: none;">
+                                <i class="bi bi-bar-chart"></i> En İyi Aylar
+                            </button>
                         </div>
                         <div class="card-body">
                             <canvas id="campaignChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Campaign Recommendations Card -->
+                    <div class="card mt-3">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-lightbulb-fill"></i> Tahmin İçin Kampanya Önerileri
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="recommendationsContent">
+                                <!-- Recommendations will be populated here -->
+                            </div>
+                            <div id="noRecommendations" class="text-center text-muted py-3">
+                                <i class="bi bi-info-circle fs-5"></i>
+                                <p class="mt-2 small">Kampanya önerisi görmek için tahmin oluşturun</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -378,6 +399,29 @@
                             </div>
                         </div>
                     </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Campaign Performance Modal -->
+    <div class="modal fade" id="campaignPerformanceModal" tabindex="-1" aria-labelledby="campaignPerformanceModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="campaignPerformanceModalLabel">
+                        <i class="bi bi-bar-chart"></i> En Yüksek Performans Gösteren Kampanya Ayları
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <small id="campaignPerformanceSummary" class="text-muted"></small>
+                    </div>
+                    <canvas id="campaignPerformanceChart" style="max-height: 400px;"></canvas>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
