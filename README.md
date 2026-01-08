@@ -328,4 +328,5 @@ Her ürün için 24 aylık (2023-01'den 2024-12'ye) satış verisi bulunmaktadı
 Bu proje üniversite projesi olarak geliştirilmiştir.
 
 ##  Teşekkürler#   b u r o t i m e _ d s s  
+ #   b u r o t i m e _ d s s  
  
