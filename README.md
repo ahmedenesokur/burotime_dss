@@ -4,7 +4,7 @@
 
 Bu proje, BüroTime ofis mobilyaları firması için geliştirilen web tabanlı bir karar destek sistemidir. Sistem, geçmiş satış verilerini analiz ederek gelecek 6 ay için satış tahminleri oluşturur ve üretim planlama kararlarını destekler.
 
-**Üniversite Projesi** - Ahmed & Enes
+**Üniversite Projesi** - Ahmed Enes Okur
 
 ## 🚀 Özellikler
 
@@ -322,23 +322,10 @@ Her ürün için 24 aylık (2023-01'den 2024-12'ye) satış verisi bulunmaktadı
 - Tarayıcı konsolunda JavaScript hataları olup olmadığına bakın
 - Sayfayı yenileyin (Ctrl+F5)
 
-## 👥 Geliştirici Ekibi
-
-- **Ahmed** - Backend & Database
-- **Enes** - Frontend & UI/UX
 
 ## 📄 Lisans
 
 Bu proje üniversite projesi olarak geliştirilmiştir.
 
-## 🙏 Teşekkürler
-
-- Bootstrap ekibine kullanışlı UI framework için
-- Chart.js ekibine güzel görselleştirmeler için
-- BüroTime firmasına ilham için
-
----
-
-**Not:** Bu sistem eğitim amaçlı geliştirilmiştir. Gerçek üretim ortamında kullanmadan önce güvenlik ve performans testleri yapılmalıdır.
-#   k d s _ p r o j e c t  
+##  Teşekkürler#   b u r o t i m e _ d s s  
  
