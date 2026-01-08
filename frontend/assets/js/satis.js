@@ -52,8 +52,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Setup event listeners
 function setupEventListeners() {
-    document.getElementById('salesForm').addEventListener('submit', handleSubmit);
-    document.getElementById('filterUrun').addEventListener('change', filterSalesData);
+    const salesFormEl = document.getElementById('salesForm');
+    if (salesFormEl) {
+        salesFormEl.addEventListener('submit', handleSubmit);
+    }
+
+    const filterEl = document.getElementById('filterUrun');
+    if (filterEl) {
+        filterEl.addEventListener('change', filterSalesData);
+    }
 }
 
 // Load products into dropdowns
@@ -64,20 +71,26 @@ async function loadProducts() {
         
         // Populate form select
         const formSelect = document.getElementById('urunSelect');
-        formSelect.innerHTML = '<option value="">Ürün Seçin...</option>';
-        
+        if (formSelect) formSelect.innerHTML = '<option value="">Ürün Seçin...</option>';
+
         // Populate filter select
         const filterSelect = document.getElementById('filterUrun');
-        filterSelect.innerHTML = '<option value="">Tüm Ürünler</option>';
-        
+        if (filterSelect) filterSelect.innerHTML = '<option value="">Tüm Ürünler</option>';
+
         products.forEach(product => {
-            const option1 = document.createElement('option');
-            option1.value = product.id;
-            option1.textContent = `${product.urun_kodu} - ${product.urun_adi}`;
-            formSelect.appendChild(option1);
-            
-            const option2 = option1.cloneNode(true);
-            filterSelect.appendChild(option2);
+            if (formSelect) {
+                const option1 = document.createElement('option');
+                option1.value = product.id;
+                option1.textContent = `${product.urun_kodu} - ${product.urun_adi}`;
+                formSelect.appendChild(option1);
+            }
+
+            if (filterSelect) {
+                const option2 = document.createElement('option');
+                option2.value = product.id;
+                option2.textContent = `${product.urun_kodu} - ${product.urun_adi}`;
+                filterSelect.appendChild(option2);
+            }
         });
     } catch (error) {
         console.error('Error loading products:', error);
@@ -192,29 +205,37 @@ async function handleSubmit(e) {
 // Show success message
 function showSuccess(message) {
     const messageDiv = document.getElementById('formMessage');
-    messageDiv.innerHTML = `
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i>${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    `;
-    
-    setTimeout(() => {
-        messageDiv.innerHTML = '';
-    }, 5000);
+    if (messageDiv) {
+        messageDiv.innerHTML = `
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i>${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+
+        setTimeout(() => {
+            messageDiv.innerHTML = '';
+        }, 5000);
+    } else {
+        console.log('Success:', message);
+    }
 }
 
 // Show error message
 function showError(message) {
     const messageDiv = document.getElementById('formMessage');
-    messageDiv.innerHTML = `
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    `;
-    
-    setTimeout(() => {
-        messageDiv.innerHTML = '';
-    }, 5000);
+    if (messageDiv) {
+        messageDiv.innerHTML = `
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+
+        setTimeout(() => {
+            messageDiv.innerHTML = '';
+        }, 5000);
+    } else {
+        console.error('Error:', message);
+    }
 }

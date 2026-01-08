@@ -6,7 +6,6 @@ const db = require('../db');
  * @param {number} urun_id - Product ID
  * @param {number} ay_sayisi - Number of months to forecast (default 6)
  * @param {number} guvenlik_orani - Safety stock percentage (default from DB)
- * @param {number} kampanya_etkisi - Campaign impact multiplier (default from DB)
  * @param {boolean} mevsimsellik_aktif - Enable seasonality (default from DB)
  * @returns {Object} Forecast results
  */
@@ -87,7 +86,6 @@ async function generateProductForecast(urun_id, options = {}) {
     girdiler: {
       ay_sayisi: params.ay_sayisi,
       guvenlik_orani: params.guvenlik_orani,
-      kampanya_etkisi: params.kampanya_etkisi,
       mevsimsellik_aktif: params.mevsimsellik_aktif
     },
     sonuclar: forecasts,
@@ -176,16 +174,19 @@ async function getParameters(options) {
     'SELECT * FROM model_parametreleri ORDER BY id DESC LIMIT 1'
   );
   
-  const defaults = dbParams.length > 0 ? dbParams[0] : {
+  const defaults = {
     guvenlik_stok_orani: 10.0,
-    kampanya_etkisi: 1.05,
-    mevsimsellik_aktif: 0
+    mevsimsellik_aktif: 1
   };
-  
+
+  // Prefer explicit `options` first. For `mevsimsellik_aktif` we enforce
+  // the default ON (1) unless the caller explicitly passes a value.
+  // We still read DB for `guvenlik_stok_orani` fallback only.
+  const dbDefaults = dbParams.length > 0 ? dbParams[0] : {};
+
   return {
     ay_sayisi: options.ay_sayisi || 6,
-    guvenlik_orani: options.guvenlik_orani !== undefined ? options.guvenlik_orani : defaults.guvenlik_stok_orani,
-    kampanya_etkisi: options.kampanya_etkisi !== undefined ? options.kampanya_etkisi : defaults.kampanya_etkisi,
+    guvenlik_orani: options.guvenlik_orani !== undefined ? options.guvenlik_orani : (dbDefaults.guvenlik_stok_orani || defaults.guvenlik_stok_orani),
     mevsimsellik_aktif: options.mevsimsellik_aktif !== undefined ? options.mevsimsellik_aktif : defaults.mevsimsellik_aktif
   };
 }

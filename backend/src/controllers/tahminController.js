@@ -4,7 +4,7 @@ const forecastService = require('../services/forecastService');
 // Generate forecast for a single product
 exports.generateForecast = async (req, res) => {
   try {
-    const { urun_id, ay_sayisi, guvenlik_orani, kampanya_etkisi, mevsimsellik_aktif } = req.query;
+    const { urun_id, ay_sayisi, guvenlik_orani, mevsimsellik_aktif } = req.query;
     
     if (!urun_id) {
       return res.status(400).json({ 
@@ -15,7 +15,6 @@ exports.generateForecast = async (req, res) => {
     const options = {
       ay_sayisi: ay_sayisi ? parseInt(ay_sayisi) : undefined,
       guvenlik_orani: guvenlik_orani ? parseFloat(guvenlik_orani) : undefined,
-      kampanya_etkisi: kampanya_etkisi ? parseFloat(kampanya_etkisi) : undefined,
       mevsimsellik_aktif: mevsimsellik_aktif !== undefined ? parseInt(mevsimsellik_aktif) : undefined
     };
     
@@ -36,12 +35,11 @@ exports.generateForecast = async (req, res) => {
 // Generate forecast for all products
 exports.generateBulkForecast = async (req, res) => {
   try {
-    const { ay_sayisi, guvenlik_orani, kampanya_etkisi, mevsimsellik_aktif } = req.query;
+    const { ay_sayisi, guvenlik_orani, mevsimsellik_aktif } = req.query;
     
     const options = {
       ay_sayisi: ay_sayisi ? parseInt(ay_sayisi) : undefined,
       guvenlik_orani: guvenlik_orani ? parseFloat(guvenlik_orani) : undefined,
-      kampanya_etkisi: kampanya_etkisi ? parseFloat(kampanya_etkisi) : undefined,
       mevsimsellik_aktif: mevsimsellik_aktif !== undefined ? parseInt(mevsimsellik_aktif) : undefined
     };
     

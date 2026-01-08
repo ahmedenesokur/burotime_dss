@@ -12,7 +12,19 @@ exports.getParameters = async (req, res) => {
       return res.status(404).json({ error: 'Parameters not found' });
     }
     
-    res.json(params[0]);
+    // Return stored parameters, but ensure `mevsimsellik_aktif` defaults
+    // to 1 (ON) when the DB value is missing. If DB has 0 or 1, return
+    // that value so the user can toggle it via the API/UI.
+    const out = { ...params[0] };
+
+    if (out.mevsimsellik_aktif === undefined || out.mevsimsellik_aktif === null) {
+      out.mevsimsellik_aktif = 1; // default ON
+    } else {
+      // Normalize to 0 or 1
+      out.mevsimsellik_aktif = out.mevsimsellik_aktif ? 1 : 0;
+    }
+
+    res.json(out);
   } catch (error) {
     console.error('Error fetching parameters:', error);
     res.status(500).json({ error: 'Failed to fetch parameters' });
@@ -22,7 +34,7 @@ exports.getParameters = async (req, res) => {
 // Update parameters
 exports.updateParameters = async (req, res) => {
   try {
-    const { guvenlik_stok_orani, kampanya_etkisi, mevsimsellik_aktif } = req.body;
+    const { guvenlik_stok_orani, mevsimsellik_aktif } = req.body;
     
     // Get current parameters
     const [current] = await db.query(
@@ -44,10 +56,7 @@ exports.updateParameters = async (req, res) => {
       values.push(guvenlik_stok_orani);
     }
     
-    if (kampanya_etkisi !== undefined) {
-      updates.push('kampanya_etkisi = ?');
-      values.push(kampanya_etkisi);
-    }
+    // kampanya_etkisi removed from parameters
     
     if (mevsimsellik_aktif !== undefined) {
       updates.push('mevsimsellik_aktif = ?');

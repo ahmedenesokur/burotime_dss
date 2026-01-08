@@ -56,8 +56,8 @@ CREATE TABLE IF NOT EXISTS `tahmin_sonuclari` (
 CREATE TABLE IF NOT EXISTS `model_parametreleri` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `guvenlik_stok_orani` DECIMAL(5,2) DEFAULT 10.00 COMMENT 'Safety stock percentage (e.g., 10.00 = +10%)',
-    `kampanya_etkisi` DECIMAL(5,2) DEFAULT 1.05 COMMENT 'Campaign impact multiplier (e.g., 1.05 = +5%)',
-    `mevsimsellik_aktif` TINYINT(1) DEFAULT 0 COMMENT '0 = Seasonality OFF, 1 = Seasonality ON',
+    -- `kampanya_etkisi` removed: campaign impact multiplier is no longer stored globally
+    `mevsimsellik_aktif` TINYINT(1) DEFAULT 1 COMMENT '0 = Seasonality OFF, 1 = Seasonality ON',
     `guncelleme_tarihi` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_turkish_ci;
 
@@ -65,6 +65,6 @@ CREATE TABLE IF NOT EXISTS `model_parametreleri` (
 -- Insert default model parameters
 -- =====================================================
 INSERT INTO `model_parametreleri` 
-    (`guvenlik_stok_orani`, `kampanya_etkisi`, `mevsimsellik_aktif`) 
+    (`guvenlik_stok_orani`, `mevsimsellik_aktif`) 
 VALUES 
-    (10.00, 1.05, 0);
+    (10.00, 1);
